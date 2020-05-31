@@ -34,11 +34,29 @@
 
 class TypeAnalysis:  public Andersen {
 
+    static TypeAnalysis* typeAnal; // static instance
+
 public:
     /// Constructor
 	TypeAnalysis(PTATY type = TypeCPP_WPA)
         :  Andersen(type){
     }
+
+    /// Create an singleton instance directly instead of invoking llvm pass manager
+    static TypeAnalysis* createTypeAnalysis(SVFModule* svfModule) {
+        if(typeAnal==NULL) {
+            typeAnal = new TypeAnalysis(TypeCPP_WPA);
+            typeAnal->analyze(svfModule);
+            return typeAnal;
+        }
+        return typeAnal;
+    }
+    static void releaseAndersenWaveDiff() {
+        if (typeAnal)
+            delete typeAnal;
+        typeAnal = NULL;
+    }
+
 
     /// Destructor
     virtual ~TypeAnalysis() {

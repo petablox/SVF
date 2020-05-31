@@ -41,6 +41,8 @@ using namespace std;
 
 llvm::cl::opt<bool> genICFG("genicfg", llvm::cl::init(true), llvm::cl::desc("Generate ICFG graph"));
 
+TypeAnalysis* TypeAnalysis::typeAnal = NULL;
+
 /// Initialize analysis
 void TypeAnalysis::initialize(SVFModule* svfModule) {
     Andersen::initialize(svfModule);
