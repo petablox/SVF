@@ -36,6 +36,8 @@
 #include "Util/ThreadAPI.h"
 #include "llvm/Support/JSON.h"
 
+#include <iostream>
+
 namespace SVFUtil {
 
 
@@ -353,6 +355,23 @@ inline bool isProgEntryFunction (const SVFFunction * fun) {
 
 inline bool isProgEntryFunction (const Function * fun) {
     return fun && fun->getName().str() == "main";
+}
+
+inline bool isModuleFunction (const SVFFunction * fun, std::string moduleName) {
+    if (fun == NULL) {
+      return false;
+    }
+    Function *llvmFun = fun->getLLVMFun();
+    Module *mod = llvmFun->getParent();
+    return (mod->getModuleIdentifier() == moduleName);
+}
+
+inline bool isModuleFunction (const Function * fun, std::string moduleName) {
+    if (fun == NULL) {
+      return false;
+    }
+    const Module *mod = fun->getParent();
+    return (mod->getModuleIdentifier() == moduleName);
 }
 
 /// Get program entry function from module.

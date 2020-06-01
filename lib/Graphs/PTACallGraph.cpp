@@ -80,6 +80,31 @@ bool PTACallGraphNode::isReachableFromProgEntry() const
     return false;
 }
 
+bool PTACallGraphNode::isReachableFromModule(std::string moduleName) const
+{
+    std::stack<const PTACallGraphNode*> nodeStack;
+    NodeBS visitedNodes;
+    nodeStack.push(this);
+    visitedNodes.set(getId());
+
+    while (nodeStack.empty() == false) {
+        PTACallGraphNode* node = const_cast<PTACallGraphNode*>(nodeStack.top());
+        nodeStack.pop();
+
+        if (SVFUtil::isModuleFunction(node->getFunction(), moduleName))
+            return true;
+
+        for (const_iterator it = node->InEdgeBegin(), eit = node->InEdgeEnd(); it != eit; ++it) {
+            PTACallGraphEdge* edge = *it;
+            if (visitedNodes.test_and_set(edge->getSrcID()))
+                nodeStack.push(edge->getSrcNode());
+        }
+    }
+
+    return false;
+}
+
+
 
 /// Constructor
 PTACallGraph::PTACallGraph(CGEK k): kind(k) {

@@ -31,6 +31,7 @@
 #include "WPA/Andersen.h"
 #include "WPA/TypeAnalysis.h"
 #include "Util/BasicTypes.h"
+#include "SVF-FE/LLVMUtil.h"
 
 #include <set>
 #include <fstream>
@@ -41,6 +42,15 @@ using namespace std;
 static llvm::cl::opt<std::string> InputFilename(cl::Positional, llvm::cl::desc("<input bitcode>"), llvm::cl::init("-"));
 static llvm::cl::opt<string> OutputFilename("o", cl::desc("Specify output filename"), cl::value_desc("filename"));
 static llvm::cl::opt<string> AnalType("t", cl::desc("Analysis type"), cl::value_desc("type"));
+static llvm::cl::opt<string> EntryModule("m", cl::desc("Entry module"), cl::value_desc("module bc"), llvm::cl::init("main"));
+
+bool reachable(PTACallGraphNode *n) {
+  if (EntryModule == "main") {
+    return n->isReachableFromProgEntry();
+  } else {
+    return n->isReachableFromModule(EntryModule);
+  } 
+}
 
 int main(int argc, char ** argv) {
 
@@ -71,15 +81,18 @@ int main(int argc, char ** argv) {
 
     PTACallGraph::iterator it = graph->begin();
     PTACallGraph::iterator eit = graph->end();
-    for (; it != eit; ++it) {
+    for (; it != eit; ++it) { 
       PTACallGraphNode *n = it->second;
-      if (!n->isReachableFromProgEntry())
+
+      if (!reachable(n)) 
         continue;
 
       const SVFFunction *f = n->getFunction();
       Function *llvmFun = f->getLLVMFun();
       Module *mod = llvmFun->getParent();
-      //std::cout << "Reached " << f->getName().str() << " :: " << mod->getModuleIdentifier() << std::endl;
+
+      //std::cout << "Reached " << f->getName().str() << " :: " << mod->getModuleIdentifier() << " :: " << n->isReachableFromProgEntry() << std::endl;
+
       std::string name = mod->getModuleIdentifier();
       if (modules.find(name) == modules.end()) {
         modules.insert(name);
@@ -101,6 +114,23 @@ int main(int argc, char ** argv) {
       std::cout << "Reached " << name << std::endl;
       mfile << name << std::endl;
     }
+
+    const SVFFunction *entry = SVFUtil::getProgEntryFunction(svfModule);
+    if (entry == NULL) {
+      std::cout << "No entry function" << std::endl;
+      return 1;
+    }
+    Function *llvmFun = entry->getLLVMFun();
+    if (llvmFun == NULL) {
+      std::cout << "No entry function" << std::endl;
+      return 1;
+    }
+    Module *mod = llvmFun->getParent();
+    if (mod == NULL) {
+      std::cout << "No entry function" << std::endl;
+      return 1;
+    }
+    std::cout << "Entry " << entry->getName().str() << " :: " << mod->getModuleIdentifier() << std::endl;
 
     mfile.close();
 
