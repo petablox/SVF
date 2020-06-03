@@ -185,6 +185,8 @@ void CHGraph::connectInheritEdgeViaCall(const SVFFunction* callerfun, CallSite c
             struct DemangledName basename = demangle(callee->getName().str());
             if (!SVFUtil::isa<CallInst>(csThisPtr) && !SVFUtil::isa<InvokeInst>(csThisPtr) &&
                     basename.className.size() > 0) {
+		if (!getNode(basename.className))
+			createNode(basename.className);
                 addEdge(dname.className, basename.className, CHEdge::INHERITANCE);
             }
         }
