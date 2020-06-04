@@ -163,7 +163,7 @@ public:
     /// Return TRUE if this function can be reached from main.
     bool isReachableFromProgEntry() const;
 
-    bool isReachableFromModule(std::string) const;
+    bool isReachableFromModule(std::set<std::string> *entries) const;
 };
 
 /*!

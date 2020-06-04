@@ -44,12 +44,18 @@ static llvm::cl::opt<string> OutputFilename("o", cl::desc("Specify output filena
 static llvm::cl::opt<string> AnalType("t", cl::desc("Analysis type"), cl::value_desc("type"));
 static llvm::cl::opt<string> EntryModule("m", cl::desc("Entry module"), cl::value_desc("module bc"), llvm::cl::init("main"));
 
-bool reachable(PTACallGraphNode *n) {
+bool reachable(PTACallGraphNode *n, std::set<std::string> *reachables) {
   if (EntryModule == "main") {
     return n->isReachableFromProgEntry();
   } else {
-    return n->isReachableFromModule(EntryModule);
+    return n->isReachableFromModule(reachables);
   } 
+}
+
+void chomp(string &s) {
+  int pos;
+  if((pos=s.find('\n')) != string::npos)
+    s.erase(pos);
 }
 
 int main(int argc, char ** argv) {
@@ -75,6 +81,16 @@ int main(int argc, char ** argv) {
     } 
 
     std::set<std::string> modules;
+    std::set<std::string> reachables;
+    if (EntryModule != "main") {
+      std::ifstream infile(EntryModule);
+      std::string str;
+      while (std::getline(infile, str)) {
+        std::cout << "Using " << str << std::endl;
+        reachables.insert(str);
+      }
+    }
+
 
     /// Call Graph
     PTACallGraph* graph = ander->getPTACallGraph();
@@ -84,7 +100,7 @@ int main(int argc, char ** argv) {
     for (; it != eit; ++it) { 
       PTACallGraphNode *n = it->second;
 
-      if (!reachable(n)) 
+      if (!reachable(n, &reachables)) 
         continue;
 
       const SVFFunction *f = n->getFunction();

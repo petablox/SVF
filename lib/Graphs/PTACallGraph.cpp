@@ -80,7 +80,7 @@ bool PTACallGraphNode::isReachableFromProgEntry() const
     return false;
 }
 
-bool PTACallGraphNode::isReachableFromModule(std::string moduleName) const
+bool PTACallGraphNode::isReachableFromModule(std::set<std::string> *entries) const
 {
     std::stack<const PTACallGraphNode*> nodeStack;
     NodeBS visitedNodes;
@@ -91,7 +91,7 @@ bool PTACallGraphNode::isReachableFromModule(std::string moduleName) const
         PTACallGraphNode* node = const_cast<PTACallGraphNode*>(nodeStack.top());
         nodeStack.pop();
 
-        if (SVFUtil::isModuleFunction(node->getFunction(), moduleName))
+        if (SVFUtil::isModuleFunction(node->getFunction(), entries))
             return true;
 
         for (const_iterator it = node->InEdgeBegin(), eit = node->InEdgeEnd(); it != eit; ++it) {
