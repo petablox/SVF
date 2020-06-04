@@ -98,7 +98,6 @@ int main(int argc, char ** argv) {
         std::cout << "Using " << str << std::endl;
         reachables.insert(str);
       }
-      reachables.insert("main");
     }
 
     std::cout << "Starting reachability..." << std::endl; 
