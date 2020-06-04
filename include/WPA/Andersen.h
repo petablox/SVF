@@ -75,12 +75,29 @@ public:
     static double timeOfUpdateCallGraph;
     //@}
 
+    static Andersen* anders; // static instance
+
     /// Constructor
     Andersen(PTATY type = Andersen_WPA, bool alias_check = true)
         :  BVDataPTAImpl(type, alias_check), consCG(NULL), diffOpt(true), pwcOpt(false)
     {
 		iterationForPrintStat = OnTheFlyIterBudgetForStat;
     }
+
+    /// Create an singleton instance directly instead of invoking llvm pass manager
+    static Andersen* createAndersen(SVFModule* svfModule) {
+        if(anders==NULL) {
+            anders = new Andersen(Andersen_WPA, false);
+            anders->analyze(svfModule);
+            return anders;
+        }
+        return anders;
+    }
+    static void releaseAndersen() {
+        if (anders)
+            delete anders;
+        anders = NULL;
+    } 
 
     /// Destructor
     virtual ~Andersen() {

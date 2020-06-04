@@ -63,6 +63,8 @@ static llvm::cl::opt<bool> MergePWC("merge-pwc",  llvm::cl::init(true),
                                         llvm::cl::desc("Enable PWC in graph solving"));
 
 
+Andersen* Andersen::anders = NULL;
+
 /*!
  * Andersen analysis
  */

@@ -32,6 +32,7 @@
 #include "WPA/TypeAnalysis.h"
 #include "Util/BasicTypes.h"
 #include "SVF-FE/LLVMUtil.h"
+#include "WPA/FlowSensitive.h"
 
 #include <set>
 #include <fstream>
@@ -68,13 +69,21 @@ int main(int argc, char ** argv) {
                                 "Whole Program Points-to Analysis\n");
 
     SVFModule* svfModule = LLVMModuleSet::getLLVMModuleSet()->buildSVFModule(moduleNameVec);
-    Andersen* ander = NULL;
+    PointerAnalysis* pta = NULL;
     if (AnalType.compare("type") == 0) {
       std::cout << "Using type call graph" << std::endl;
-      ander = TypeAnalysis::createTypeAnalysis(svfModule);
-    } else if (AnalType.compare("anders") == 0) {
+      pta = TypeAnalysis::createTypeAnalysis(svfModule);
+    } else if (AnalType.compare("nanders") == 0) {
+      std::cout << "Using nanders call graph" << std::endl;
+      pta = Andersen::createAndersen(svfModule);
+    }
+    else if (AnalType.compare("flow") == 0) {
+      std::cout << "Using flow call graph" << std::endl;
+      pta = FlowSensitive::createFSWPA(svfModule);
+    }
+    else if (AnalType.compare("anders") == 0) {
       std::cout << "Using anders call graph" << std::endl;
-      ander = AndersenWaveDiff::createAndersenWaveDiff(svfModule);
+      pta = AndersenWaveDiff::createAndersenWaveDiff(svfModule);
     } else {
       std::cout << "unrecognize type " << AnalType << std::endl;
       return 0;
@@ -89,11 +98,13 @@ int main(int argc, char ** argv) {
         std::cout << "Using " << str << std::endl;
         reachables.insert(str);
       }
+      reachables.insert("main");
     }
 
+    std::cout << "Starting reachability..." << std::endl; 
 
     /// Call Graph
-    PTACallGraph* graph = ander->getPTACallGraph();
+    PTACallGraph* graph = pta->getPTACallGraph();
 
     PTACallGraph::iterator it = graph->begin();
     PTACallGraph::iterator eit = graph->end();
@@ -106,8 +117,6 @@ int main(int argc, char ** argv) {
       const SVFFunction *f = n->getFunction();
       Function *llvmFun = f->getLLVMFun();
       Module *mod = llvmFun->getParent();
-
-      //std::cout << "Reached " << f->getName().str() << " :: " << mod->getModuleIdentifier() << " :: " << n->isReachableFromProgEntry() << std::endl;
 
       std::string name = mod->getModuleIdentifier();
       if (modules.find(name) == modules.end()) {
@@ -130,23 +139,6 @@ int main(int argc, char ** argv) {
       std::cout << "Reached " << name << std::endl;
       mfile << name << std::endl;
     }
-
-    const SVFFunction *entry = SVFUtil::getProgEntryFunction(svfModule);
-    if (entry == NULL) {
-      std::cout << "No entry function" << std::endl;
-      return 1;
-    }
-    Function *llvmFun = entry->getLLVMFun();
-    if (llvmFun == NULL) {
-      std::cout << "No entry function" << std::endl;
-      return 1;
-    }
-    Module *mod = llvmFun->getParent();
-    if (mod == NULL) {
-      std::cout << "No entry function" << std::endl;
-      return 1;
-    }
-    std::cout << "Entry " << entry->getName().str() << " :: " << mod->getModuleIdentifier() << std::endl;
 
     mfile.close();
 
